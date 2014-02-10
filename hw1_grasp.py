@@ -131,15 +131,14 @@ class RoboHandler:
           
           # fill G
           torque = np.cross(pos, dir)
-          wrench[0:3] = dir
-          wrench[4:6] = torque #unit wrech
+          wrench = np.concatenate([dir, torque])
 
           G[:, i] = wrench
         
-        #TODO use G to compute scrores as discussed in class
+        # Use SVD to compute minimum score
         U, S, V = np.linalg.svd(G)
         score = S[-1]
-        return score #change thisD
+        return score 
 
       except openravepy.planning_error,e:
         #you get here if there is a failure in planning
@@ -211,7 +210,9 @@ class RoboHandler:
 
 if __name__ == '__main__':
   robo = RoboHandler()
-  #robo.show_grasp(robo.grasps_ordered[0], delay=30)
+
+  for i in range(5):
+    robo.show_grasp(robo.grasps_ordered[i], delay=30)
 
   #import IPython
   #IPython.embed()

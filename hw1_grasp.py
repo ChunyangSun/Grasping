@@ -111,9 +111,10 @@ class RoboHandler:
     self.grasps_ordered_noisy = self.grasps_ordered.copy() #you should change the order of self.grasps_ordered_noisy
     #TODO set the score with your evaluation function (over random samples) and sort
     num_noisy_samples = 5
-    noisy_samples = []
+    
 
     for grasp in self.grasps_ordered_noisy:
+      noisy_samples = []
       for i in range(num_noisy_samples):
         noisy_grasp = self.sample_random_grasp(grasp)
         score = self.eval_grasp(noisy_grasp)

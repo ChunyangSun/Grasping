@@ -177,14 +177,23 @@ class RoboHandler:
     #sample random position
     RAND_DIST_SIGMA = 0.01 #TODO you may want to change this
     pos_orig = grasp[self.graspindices['igrasppos']]
-    #TODO set a random position
 
+    pos_noise = pos_orig + np.random.normal(loc=0.0, scale=RAND_DIST_SIGMA)
+
+    #TODO set a random position -- DONE
+    grasp[self.graspindices['igrasppos']] = pos_noise
 
     #sample random orientation
     RAND_ANGLE_SIGMA = np.pi/24 #TODO you may want to change this
     dir_orig = grasp[self.graspindices['igraspdir']]
     roll_orig = grasp[self.graspindices['igrasproll']]
-    #TODO set the direction and roll to be random
+
+    #TODO set the direction and roll to be random -- DONE
+    dir_noise = dir_orig + np.random.normal(loc=0.0, scale=RAND_ANGLE_SIGMA)
+    roll_noise = roll_orig + np.random.normal(loc=0.0, scale=RAND_ANGLE_SIGMA)
+
+    grasp[self.graspindices['igraspdir']]  = dir_noise
+    grasp[self.graspindices['igrasproll']] = roll_noise
 
     return grasp
 

@@ -211,8 +211,11 @@ class RoboHandler:
 if __name__ == '__main__':
   robo = RoboHandler()
 
+  delay = 20
   for i in range(5):
-    robo.show_grasp(robo.grasps_ordered[i], delay=30)
+    print 'Showing grasp ', i
+    robo.show_grasp(robo.grasps_ordered[i], delay=delay)
+    
 
   #import IPython
   #IPython.embed()

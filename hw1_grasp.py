@@ -106,7 +106,7 @@ class RoboHandler:
     self.grasps_ordered = self.grasps_ordered[order]
 
   
-  # order the grasps - but instead of evaluating the grasp, evaluate random perturbations of the grasp 
+  # order the grasps - but instead of evaluating the grasp, evaluate random perturbations of the grasp
   def order_grasps_noisy(self):
     self.grasps_ordered_noisy = self.grasps_ordered.copy() #you should change the order of self.grasps_ordered_noisy
     #TODO set the score with your evaluation function (over random samples) and sort
@@ -129,37 +129,40 @@ class RoboHandler:
           dir = -c[3:] #this is already a unit vector
           
           # fill G
-          wrench = np.concatenate((pos, dir))[np.newaxis]
+          torque = np.cross(pos, dir)
+          wrench = dir + torque #unit wrech
 
           G[:, i] = wrench
         
         #TODO use G to compute scrores as discussed in class
-        return 0.0 #change thisD
+        U, S, V = np.linalg.svd(G)
+        score = S[-1]
+        return score #change thisD
 
       except openravepy.planning_error,e:
         #you get here if there is a failure in planning
         #example: if the hand is already intersecting the object at the initial position/orientation
-        return  0.00 # TODO you may want to change this
+        return 0.00 # TODO you may want to change this
       
       #heres an interface in case you want to manipulate things more specifically
       #NOTE for this assignment, your solutions cannot make use of graspingnoise
-#      self.robot.SetTransform(np.eye(4)) # have to reset transform in order to remove randomness
-#      self.robot.SetDOFValues(grasp[self.graspindices.get('igrasppreshape')], self.manip.GetGripperIndices())
-#      self.robot.SetActiveDOFs(self.manip.GetGripperIndices(), self.robot.DOFAffine.X + self.robot.DOFAffine.Y + self.robot.DOFAffine.Z)
-#      self.gmodel.grasper = openravepy.interfaces.Grasper(self.robot, friction=self.gmodel.grasper.friction, avoidlinks=[], plannername=None)
-#      contacts, finalconfig, mindist, volume = self.gmodel.grasper.Grasp( \
-#            direction             = grasp[self.graspindices.get('igraspdir')], \
-#            roll                  = grasp[self.graspindices.get('igrasproll')], \
-#            position              = grasp[self.graspindices.get('igrasppos')], \
-#            standoff              = grasp[self.graspindices.get('igraspstandoff')], \
-#            manipulatordirection  = grasp[self.graspindices.get('imanipulatordirection')], \
-#            target                = self.target_kinbody, \
-#            graspingnoise         = 0.0, \
-#            forceclosure          = True, \
-#            execute               = False, \
-#            outputfinal           = True, \
-#            translationstepmult   = None, \
-#            finestep              = None )
+# self.robot.SetTransform(np.eye(4)) # have to reset transform in order to remove randomness
+# self.robot.SetDOFValues(grasp[self.graspindices.get('igrasppreshape')], self.manip.GetGripperIndices())
+# self.robot.SetActiveDOFs(self.manip.GetGripperIndices(), self.robot.DOFAffine.X + self.robot.DOFAffine.Y + self.robot.DOFAffine.Z)
+# self.gmodel.grasper = openravepy.interfaces.Grasper(self.robot, friction=self.gmodel.grasper.friction, avoidlinks=[], plannername=None)
+# contacts, finalconfig, mindist, volume = self.gmodel.grasper.Grasp( \
+# direction = grasp[self.graspindices.get('igraspdir')], \
+# roll = grasp[self.graspindices.get('igrasproll')], \
+# position = grasp[self.graspindices.get('igrasppos')], \
+# standoff = grasp[self.graspindices.get('igraspstandoff')], \
+# manipulatordirection = grasp[self.graspindices.get('imanipulatordirection')], \
+# target = self.target_kinbody, \
+# graspingnoise = 0.0, \
+# forceclosure = True, \
+# execute = False, \
+# outputfinal = True, \
+# translationstepmult = None, \
+# finestep = None )
 
 
 
@@ -194,7 +197,7 @@ class RoboHandler:
           with self.env:
             contacts,finalconfig,mindist,volume = self.gmodel.testGrasp(grasp=grasp,translate=True,forceclosure=True)
             #if mindist == 0:
-            #  print 'grasp is not in force closure!'
+            # print 'grasp is not in force closure!'
             contactgraph = self.gmodel.drawContacts(contacts) if len(contacts) > 0 else None
             self.gmodel.robot.GetController().Reset(0)
             self.gmodel.robot.SetDOFValues(finalconfig[0])
@@ -212,6 +215,6 @@ if __name__ == '__main__':
   #IPython.embed()
   #print "Showing grasps..."
   #for grasp in robo.grasps_ordered:
-  #  robo.show_grasp(grasp)
+  # robo.show_grasp(grasp)
   #time.sleep(10000) #to keep the openrave window open
   

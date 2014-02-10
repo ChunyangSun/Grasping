@@ -124,13 +124,15 @@ class RoboHandler:
         obj_position = self.gmodel.target.GetTransform()[0:3,3]
         # for each contact
         G = np.zeros(shape=(6, len(contacts))) #the wrench matrix
+        wrench = np.zeros(shape=(6,1))
         for i, c in enumerate(contacts):
           pos = c[0:3] - obj_position
           dir = -c[3:] #this is already a unit vector
           
           # fill G
           torque = np.cross(pos, dir)
-          wrench = dir + torque #unit wrech
+          wrench[0:3] = dir
+          wrench[4:6] = torque #unit wrech
 
           G[:, i] = wrench
         

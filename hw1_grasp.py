@@ -131,8 +131,7 @@ class RoboHandler:
           
           # fill G
           torque = np.cross(pos, dir)
-          wrench[0:3] = dir
-          wrench[4:6] = torque #unit wrech
+          wrench = np.concatenate([dir, torque])
 
           G[:, i] = wrench
         

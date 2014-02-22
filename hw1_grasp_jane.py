@@ -63,14 +63,14 @@ class RoboHandler:
     self.env.SetViewer('qtcoin')
     self.env.GetViewer().SetName('HW1 Viewer')
     self.env.Load('models/%s.env.xml' %PACKAGE_NAME)
-    cc = openravepy.RaveCreateCollisionChecker(self.env, "pqp")
-    self.env.SetCollisionChecker(cc)
-
+    
     # time.sleep(3) # wait for viewer to initialize. May be helpful to uncomment
     self.robot = self.env.GetRobots()[0]
     self.manip = self.robot.GetActiveManipulator()
     self.end_effector = self.manip.GetEndEffector()
 
+    # cc = openravepy.RaveCreateCollisionChecker(self.env, 'pqp')
+    # self.env.SetCollisionChecker(cc)
 
   # problem specific initialization - load target and grasp module
   def problem_init(self):
@@ -86,7 +86,7 @@ class RoboHandler:
 
     # create a grasping module
     self.gmodel = openravepy.databases.grasping.GraspingModel(self.robot, self.target_kinbody)
-    
+
     # if you want to set options, e.g. friction
     options = openravepy.options
     options.friction = 0.1
@@ -113,7 +113,7 @@ class RoboHandler:
     self.grasps_ordered_noisy = self.grasps_ordered.copy() #you should change the order of self.grasps_ordered_noisy
     #TODO set the score with your evaluation function (over random samples) and sort
     num_noisy_samples = 5
-    
+  
 
     for grasp in self.grasps_ordered_noisy:
       noisy_samples = []
@@ -154,13 +154,13 @@ class RoboHandler:
         
         # Use SVD to compute minimum score
         k1 = 1
-        k2 = 1
+        k2 = 10
         k3 = 1
 
         U, S, V = np.linalg.svd(G)
         sigmaMin = abs(S[-1])
         sigmaMax = abs(S[0])
-        volumeG = np.linalg.det((G * np.transpose(G))) ** 0.5
+        volumeG = np.linalg.det(np.dot(G, np.transpose(G))) ** 0.5
         isotropy = abs(float(sigmaMin) / sigmaMax)
         print sigmaMin, volumeG, isotropy
         score = k1 * sigmaMin + k2 * volumeG + k3 * isotropy
@@ -247,17 +247,15 @@ class RoboHandler:
 if __name__ == '__main__':
   robo = RoboHandler()
 
-  # delay = 20
-  # for i in range(5):
-  #   #print 'Showing grasp ', i
-  #   #robo.show_grasp(robo.grasps_ordered[i], delay=delay)
-  #   print 'Showing noisy grasp ', i
-  #   robo.show_grasp(robo.grasps_ordered_noisy[i], delay=delay)
+  delay = 20
+  for i in range(5):
+    print 'Showing noisy grasp ', i
+    robo.show_grasp(robo.grasps_ordered_noisy[i], delay=delay)
         
 
-  #import IPython
-  #IPython.embed()
-  #print "Showing grasps..."
-  #for grasp in robo.grasps_ordered:
+  # import IPython
+  # IPython.embed()
+  # print "Showing grasps..."
+  # for grasp in robo.grasps_ordered:
   # robo.show_grasp(grasp)
-  #time.sleep(10000) #to keep the openrave window open
+  # time.sleep(10000) #to keep the openrave window open

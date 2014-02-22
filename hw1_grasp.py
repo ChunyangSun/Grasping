@@ -150,10 +150,19 @@ class RoboHandler:
 
           G[:, i] = wrench
         
-        # Use SVD to compute minimum score
+        k1 = 500
+        k2 = 100
+        k3 = 500
+
         U, S, V = np.linalg.svd(G)
-        score = S[-1]
-        return score 
+        sigmaMin = abs(S[-1])
+        sigmaMax = abs(S[0])
+        volumeG = np.linalg.det(np.dot(G, np.transpose(G))) ** 0.5
+        isotropy = abs(float(sigmaMin) / sigmaMax)
+        print sigmaMin, volumeG, isotropy
+        score = k1 * sigmaMin + k2 * volumeG + k3 * isotropy
+        return score
+
 
       except openravepy.planning_error,e:
         #you get here if there is a failure in planning
@@ -241,12 +250,3 @@ if __name__ == '__main__':
     #robo.show_grasp(robo.grasps_ordered[i], delay=delay)
     print 'Showing noisy grasp ', i
     robo.show_grasp(robo.grasps_ordered_noisy[i], delay=delay)
-        
-
-  #import IPython
-  #IPython.embed()
-  #print "Showing grasps..."
-  #for grasp in robo.grasps_ordered:
-  # robo.show_grasp(grasp)
-  #time.sleep(10000) #to keep the openrave window open
-  

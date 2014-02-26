@@ -40,6 +40,8 @@ os.environ['OPENRAVE_DATABASE'] = ordatabase_path_thispack # set path: environme
 openravepy.RaveInitialize(True, openravepy.DebugLevel.Fatal)
 openravepy.misc.InitOpenRAVELogging()
 
+def normalize(n, range):
+  return (1.0*n - range[0])/(range[1] - range[0])
 
 class RoboHandler:
   def __init__(self):
@@ -69,6 +71,10 @@ class RoboHandler:
     self.manip = self.robot.GetActiveManipulator()
     self.end_effector = self.manip.GetEndEffector()
 
+    self.sigmaMin_range = [6.07e-18, 0.0368]
+    self.volumeG_range = [3.05e-22, 0.0031]
+    self.isotropy_range = [2.70e-18, 0.0084]
+
     # cc = openravepy.RaveCreateCollisionChecker(self.env, 'pqp')
     # self.env.SetCollisionChecker(cc)
 
@@ -95,12 +101,12 @@ class RoboHandler:
 
     self.graspindices = self.gmodel.graspindices
     self.grasps = self.gmodel.grasps
-  
+
   # order the grasps - call eval grasp on each, set the 'performance' index, and sort
   def order_grasps(self):
     self.grasps_ordered = self.grasps.copy() #you should change the order of self.grasps_ordered
-    for grasp in self.grasps_ordered:
-      grasp[self.graspindices.get('performance')] = self.eval_grasp(grasp)
+    # for grasp in self.grasps_ordered:
+    #   grasp[self.graspindices.get('performance')] = self.eval_grasp(grasp)
     
     # sort!
     order = np.argsort(self.grasps_ordered[:,self.graspindices.get('performance')[0]])
@@ -129,6 +135,8 @@ class RoboHandler:
     order = order[::-1]
     self.grasps_ordered_noisy = self.grasps_ordered_noisy[order]
 
+
+
   # function to evaluate grasps
   # returns a score, which is some metric of the grasp
   # higher score should be a better grasp
@@ -153,20 +161,18 @@ class RoboHandler:
           G[:, i] = wrench
         
         # Use SVD to compute minimum score
-        k1 = 1
-        k2 = 10
-        k3 = 1
+        k1 = 2.0
+        k2 = 5.0
+        k3 = 10.0
 
         U, S, V = np.linalg.svd(G)
         sigmaMin = abs(S[-1])
         sigmaMax = abs(S[0])
         volumeG = np.linalg.det(np.dot(G, np.transpose(G))) ** 0.5
         isotropy = abs(float(sigmaMin) / sigmaMax)
-        print sigmaMin, volumeG, isotropy
-        score = k1 * sigmaMin + k2 * volumeG + k3 * isotropy
-
-        return score 
-
+        score = k1*normalize(sigmaMin, self.sigmaMin_range) + k2*normalize(volumeG, self.volumeG_range) + k3*normalize(isotropy, self.isotropy_range)
+        print score
+        return score
       except openravepy.planning_error,e:
         #you get here if there is a failure in planning
         #example: if the hand is already intersecting the object at the initial position/orientation
@@ -247,10 +253,10 @@ class RoboHandler:
 if __name__ == '__main__':
   robo = RoboHandler()
 
-  delay = 20
-  for i in range(5):
-    print 'Showing noisy grasp ', i
-    robo.show_grasp(robo.grasps_ordered_noisy[i], delay=delay)
+  delay = 100
+  for i in range(4):
+    print 'Showing grasp ', i
+    robo.show_grasp(robo.grasps_ordered[i], delay=delay)
         
 
   # import IPython

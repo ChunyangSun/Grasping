@@ -71,9 +71,10 @@ class RoboHandler:
     self.manip = self.robot.GetActiveManipulator()
     self.end_effector = self.manip.GetEndEffector()
 
-    self.sigmaMin_range = [6.07e-18, 0.0368]
-    self.volumeG_range = [3.05e-22, 0.0031]
-    self.isotropy_range = [2.70e-18, 0.0084]
+    self.s = [0, 0] # singmaMin range
+    self.v = [0, 0] # volumeG range
+    self.i = [0, 0] # isotropy range
+    self.raw_scores = []
 
     # cc = openravepy.RaveCreateCollisionChecker(self.env, 'pqp')
     # self.env.SetCollisionChecker(cc)
@@ -102,11 +103,35 @@ class RoboHandler:
     self.graspindices = self.gmodel.graspindices
     self.grasps = self.gmodel.grasps
 
+  def get_raw_score_range(self):
+    # go this loop to get raw scores and find the range of the raw scores
+    for grasp in self.grasps_ordered:
+      self.raw_scores.append(self.eval_grasp(grasp))
+
+    # get the range of the three metric through the whole loop doing evaluation for each grasp
+    all_sigmaMin = [n[0] for n in self.raw_scores]
+    all_volumnG = [n[1] for n in self.raw_scores]
+    all_isotropy = [n[2] for n in self.raw_scores]
+    self.s = [min(all_sigmaMin), max(all_sigmaMin)]
+    self.v = [min(all_volumnG), max(all_volumnG)]
+    self.i = [min(all_isotropy), max(all_isotropy)]
+
+  
   # order the grasps - call eval grasp on each, set the 'performance' index, and sort
   def order_grasps(self):
     self.grasps_ordered = self.grasps.copy() #you should change the order of self.grasps_ordered
-    # for grasp in self.grasps_ordered:
-    #   grasp[self.graspindices.get('performance')] = self.eval_grasp(grasp)
+    
+    # get raw scores before sorting
+    self.get_raw_score_range()
+
+    # normalize raw scores and linearly combine them to get the final score for each grasp
+    # This cannot be done in eval() function because the run-time eval() doesn't have those ranges to normalize the metrics until all grasps are evaluated.
+    for i, grasp in enumerate(self.grasps_ordered):
+      sigmaMin = self.raw_scores[i][0]
+      volumeG = self.raw_scores[i][1]
+      isotropy = self.raw_scores[i][2]
+      score = 2.0*normalize(sigmaMin, self.s) + 5.0*normalize(volumeG, self.v) + 10.0*normalize(isotropy, self.i)
+      grasp[self.graspindices.get('performance')] = score
     
     # sort!
     order = np.argsort(self.grasps_ordered[:,self.graspindices.get('performance')[0]])
@@ -161,22 +186,18 @@ class RoboHandler:
           G[:, i] = wrench
         
         # Use SVD to compute minimum score
-        k1 = 2.0
-        k2 = 5.0
-        k3 = 10.0
-
         U, S, V = np.linalg.svd(G)
         sigmaMin = abs(S[-1])
         sigmaMax = abs(S[0])
         volumeG = np.linalg.det(np.dot(G, np.transpose(G))) ** 0.5
         isotropy = abs(float(sigmaMin) / sigmaMax)
-        score = k1*normalize(sigmaMin, self.sigmaMin_range) + k2*normalize(volumeG, self.volumeG_range) + k3*normalize(isotropy, self.isotropy_range)
-        print score
+
+        score = [sigmaMin, volumeG, isotropy]
         return score
       except openravepy.planning_error,e:
         #you get here if there is a failure in planning
         #example: if the hand is already intersecting the object at the initial position/orientation
-        return 0.00 # TODO you may want to change this
+        return [0.00, 0.00, 0.00]# TODO you may want to change this
       
       #heres an interface in case you want to manipulate things more specifically
       #NOTE for this assignment, your solutions cannot make use of graspingnoise
@@ -253,7 +274,7 @@ class RoboHandler:
 if __name__ == '__main__':
   robo = RoboHandler()
 
-  delay = 100
+  delay = 20
   for i in range(4):
     print 'Showing grasp ', i
     robo.show_grasp(robo.grasps_ordered[i], delay=delay)
